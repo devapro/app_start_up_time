@@ -1,21 +1,27 @@
 #! /bin/bash
 
 PACKAGE_NAME="com.example.starttime.measure"
-FIRST_ACTIVITY="com.example.starttime.measure/MainActivity"
+FIRST_ACTIVITY="com.example.starttime.measure/.MainActivity"
 RELEASE_BUILD_VARIANT="installRelease"
 
 run_tests () {
 	echo "Run tests"
 	TOTAL_TIME=0
-	TOTAL_CYCLES=30
+	TOTAL_CYCLES=3
 	MAX_TIME=0
 	MIN_TIME=0
 	for i in $(seq 1 $TOTAL_CYCLES)
 		do
 			adb shell am force-stop $PACKAGE_NAME
 			sleep 1
-			RESULT=$(adb shell am start-activity -W -n $FIRST_ACTIVITY | grep "TotalTime" | cut -d ' ' -f 2)
-			TOTAL_TIME=$(($TOTAL_TIME+$RESULT))
+			RESULT=$(adb shell am start-activity -W -n ${FIRST_ACTIVITY} | grep "TotalTime" | cut -d ' ' -f 2)
+			# check if not empty
+			if [ -z "$RESULT" ]
+			then
+            echo "adb shell am start-activity return error"
+            exit 1
+      fi
+			TOTAL_TIME=$((TOTAL_TIME+RESULT))
 			if [[ $MAX_TIME < $RESULT ]]; then
 				MAX_TIME=$RESULT
 			fi
@@ -53,7 +59,6 @@ build_and_install () {
 	fi
 }
 
-
 FAIL_LOCK_COUNTER=0
 
 try_lock () {
@@ -65,10 +70,12 @@ try_lock () {
 		echo OK
 	else
 		echo FAIL
-		FAIL_LOCK_COUNTER=1+$FAIL_LOCK_COUNTER
+		FAIL_LOCK_COUNTER=$((1+$FAIL_LOCK_COUNTER))
 		if [ $FAIL_LOCK_COUNTER -eq 3 ]; then
 			exit 1
 		else
+		  echo "Try to lock clocks $FAIL_LOCK_COUNTER"
+		  sleep 10
 			try_lock
 		fi
 	fi
