@@ -47,6 +47,7 @@ install () {
 	   echo Was not installed
 	fi
 
+  echo "Install apk"
   adb install -d "/tmp/$1.apk"
   if [ $? -eq 0 ]; then
   	   echo OK
@@ -59,7 +60,7 @@ install () {
 build () {
 	./gradlew clean >> /dev/null
 	### install release build
-	echo "Build release apk and install"
+	echo "Build release apk"
 	./gradlew $RELEASE_BUILD_VARIANT >> /dev/null
 	if [ $? -eq 0 ]; then
 	   echo OK

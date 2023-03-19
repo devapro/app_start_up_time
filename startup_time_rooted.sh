@@ -2,7 +2,7 @@
 
 PACKAGE_NAME="com.example.starttime.measure"
 FIRST_ACTIVITY="com.example.starttime.measure/.MainActivity"
-RELEASE_BUILD_VARIANT="installRelease"
+RELEASE_BUILD_VARIANT="assembleRelease"
 
 run_tests () {
 	echo "Run tests"
@@ -37,7 +37,7 @@ run_tests () {
 	echo "Min time: $MIN_TIME"
 }
 
-build_and_install () {
+install () {
 	echo "Uninstall apk"
 	adb uninstall $PACKAGE_NAME >> /dev/null
 	if [ $? -eq 0 ]; then
@@ -46,13 +46,25 @@ build_and_install () {
 	   echo Was not installed
 	fi
 
+  echo "Install apk"
+  adb install -d "/tmp/$1.apk"
+  if [ $? -eq 0 ]; then
+  	   echo OK
+  	else
+  	   echo Was not installed
+  	   exit 1
+  	fi
+}
 
+build () {
 	./gradlew clean >> /dev/null
 	### install release build
-	echo "Build release apk and install"
+	echo "Build release apk"
 	./gradlew $RELEASE_BUILD_VARIANT >> /dev/null
 	if [ $? -eq 0 ]; then
 	   echo OK
+	   ### replace with relevant path
+	   cp ./app/build/outputs/apk/release/app-release.apk "/tmp/$1.apk"
 	else
 	   echo FAIL
 	   exit 1
@@ -83,24 +95,31 @@ try_lock () {
 
 
 ### run emulator
-$ANDROID_HOME/emulator/emulator -avd $1  >> /dev/null &
-adb wait-for-device
-sleep 100
+if [ -z "$3" ]; then
+  echo "You didn't provide emulator name. Will be used active emulator or device"
+else
+  $ANDROID_HOME/emulator/emulator -avd $1  >> /dev/null &
+  adb wait-for-device
+  sleep 100
+fi
 
 try_lock
 
-git checkout $2 #test/v0.0.1
+git checkout $2 #release/v1.0.1
 
-build_and_install
+build 1
+
+git checkout $3 #release/v1.0.2
+
+build 2
+
+install 1
 
 run_tests
 
-git checkout $3 #test/v0.0.2
-
-build_and_install
+install 2
 
 run_tests
-
 
 ### unlock
 echo "Unlock clocks"
@@ -108,4 +127,8 @@ echo "Unlock clocks"
 
 
 ### turn of emulator
-adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done
+if [ -z "$3" ]; then
+  echo "You didn't provide emulator name. Was used active emulator or device"
+else
+  adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done
+fi
