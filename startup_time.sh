@@ -73,8 +73,9 @@ build () {
 
 
 ### run emulator
-if [ -z "$3" ]
-then
+if [ -z "$3" ]; then
+  echo "You didn't provide emulator name. Will be used active emulator or device"
+else
   $ANDROID_HOME/emulator/emulator -avd $1  >> /dev/null &
   adb wait-for-device
   sleep 100
@@ -97,7 +98,8 @@ install 2
 run_tests
 
 ### turn of emulator
-if [ -z "$3" ]
-then
+if [ -z "$3" ]; then
+  echo "You didn't provide emulator name. Was used active emulator or device"
+else
   adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done
 fi
